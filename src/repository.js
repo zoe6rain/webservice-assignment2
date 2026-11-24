@@ -14,6 +14,8 @@ export function createRepository(db) {
     existing(eventId,userId) { return db.prepare(selection+' WHERE a.event_id=? AND a.user_id=?').get(eventId,userId); },
     mine(userId) { return db.prepare(selection+' WHERE a.user_id=? ORDER BY a.id DESC').all(userId); },
     forEvent(eventId) { return db.prepare(selection+' WHERE a.event_id=? ORDER BY a.id').all(eventId); },
+    // [구현] 자동 승급 대상: 같은 행사 PENDING 중 created_at ASC, id ASC 첫 1건 (없으면 undefined)
+    nextPending(eventId) { return db.prepare("SELECT id FROM applications WHERE event_id=? AND status='PENDING' ORDER BY created_at ASC, id ASC LIMIT 1").get(eventId); },
     approvedCount(eventId) { return db.prepare("SELECT COUNT(*) AS n FROM applications WHERE event_id=? AND status='APPROVED'").get(eventId).n; },
     insert(eventId,userId) { const r=db.prepare("INSERT INTO applications(event_id,user_id,status) VALUES (?,?,'PENDING')").run(eventId,userId); return this.application(Number(r.lastInsertRowid)); },
     // 대기 순서와 이력 저장 시점, 트랜잭션 경계는 서비스에서 결정합니다.
